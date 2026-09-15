@@ -2678,6 +2678,42 @@ t('Last keyword used case insensitively', async() => {
   return [1, x, await sql`drop table test`]
 })
 
+t('Last keyword used when the earlier keyword is in a nested fragment', async() => {
+  await sql`create table test (x int)`
+  await sql`insert into test values(1)`
+  const [{ x }] = await sql`select x from test where x ${ sql`in(select x from test where x in ${ sql([1, 2]) })` }`
+
+  return [1, x, await sql`drop table test`]
+})
+
+t('Last keyword used when an earlier keyword is newline delimited', async() => {
+  await sql`create table test (x int)`
+  await sql`insert into test values(1)`
+  const [{ x }] = await sql`select x from test where x
+in(select x from test where x in ${ sql([1, 2]) })`
+
+  return [1, x, await sql`drop table test`]
+})
+
+// Control: identical `(` delimiters were never affected by the backreference,
+// so this passes with and without the fix. It pins that the repeated-pattern
+// lookahead does not regress the same-delimiter case.
+t('Repeated keyword with identical ( delimiters is unchanged (control)', async() => {
+  await sql`create table test (x int)`
+  await sql`insert into test values(1)`
+  const [{ x }] = await sql`select x from test where x in(select x from test where (x,x) in(${ sql([[1, 1]]) }))`
+
+  return [1, x, await sql`drop table test`]
+})
+
+t('Last keyword used with an empty array', async() => {
+  await sql`create table test (x int)`
+  await sql`insert into test values(1)`
+  const rows = await sql`select x from test where x in(select x from test where x in ${ sql([]) })`
+
+  return [0, rows.length, await sql`drop table test`]
+})
+
 t('Insert array with null', async() => {
   await sql`create table test (x int[])`
   await sql`insert into test ${ sql({ x: [1, null, 3] }) }`
