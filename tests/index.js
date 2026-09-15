@@ -2642,7 +2642,38 @@ t('Last keyword used when nested keywords are all spaced', async() => {
 t('Single keyword followed by ( is still used', async() => {
   await sql`create table test (x int)`
   await sql`insert into test values(1)`
-  const [{ x }] = await sql`select x from test where x in(${ sql([1, 2]) })`
+  const [{ x }] = await sql`select x from test where (x,x) in(${ sql([[1, 1]]) })`
+
+  return [1, x, await sql`drop table test`]
+})
+
+t('Last keyword used for keywords other than in', async() => {
+  await sql`create table test (x int)`
+  const [{ x }] = await sql`with a as (insert into test values(2) returning(x)) insert into test values(3) returning ${ sql(['x']) }`
+
+  return [3, x, await sql`drop table test`]
+})
+
+t('Last keyword used when the spaced keyword comes first', async() => {
+  await sql`create table test (x int)`
+  await sql`insert into test values(1)`
+  const [{ x }] = await sql`select x from test where x in (select x from test where x in(select x from test where x in ${ sql([1, 2]) }))`
+
+  return [1, x, await sql`drop table test`]
+})
+
+t('Last keyword used with three occurrences and three delimiters', async() => {
+  await sql`create table test (x int)`
+  await sql`insert into test values(1)`
+  const [{ x }] = await sql`select x from test where x in(select x from test where x in (select x from test where x in${ sql([1, 2]) }))`
+
+  return [1, x, await sql`drop table test`]
+})
+
+t('Last keyword used case insensitively', async() => {
+  await sql`create table test (x int)`
+  await sql`insert into test values(1)`
+  const [{ x }] = await sql`SELECT x FROM test WHERE x IN(SELECT x FROM test WHERE x IN ${ sql([1, 2]) })`
 
   return [1, x, await sql`drop table test`]
 })
