@@ -2615,6 +2615,38 @@ t('Last keyword used even with duplicate keywords', async() => {
   return [x, true, await sql`drop table test`]
 })
 
+t('Last keyword used even when an earlier keyword is followed by (', async() => {
+  await sql`create table test (x int)`
+  await sql`insert into test values(1)`
+  const [{ x }] = await sql`select x from test where x in(select x from test where x in ${ sql([1, 2]) })`
+
+  return [1, x, await sql`drop table test`]
+})
+
+t('Last keyword used even when it ends the string', async() => {
+  await sql`create table test (x int)`
+  await sql`insert into test values(1)`
+  const [{ x }] = await sql`select x from test where x in (select x from test where x in${ sql([1, 2]) })`
+
+  return [1, x, await sql`drop table test`]
+})
+
+t('Last keyword used when nested keywords are all spaced', async() => {
+  await sql`create table test (x int)`
+  await sql`insert into test values(1)`
+  const [{ x }] = await sql`select x from test where x in (select x from test where x in ${ sql([1, 2]) })`
+
+  return [1, x, await sql`drop table test`]
+})
+
+t('Single keyword followed by ( is still used', async() => {
+  await sql`create table test (x int)`
+  await sql`insert into test values(1)`
+  const [{ x }] = await sql`select x from test where x in(${ sql([1, 2]) })`
+
+  return [1, x, await sql`drop table test`]
+})
+
 t('Insert array with null', async() => {
   await sql`create table test (x int[])`
   await sql`insert into test ${ sql({ x: [1, null, 3] }) }`

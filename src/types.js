@@ -173,7 +173,10 @@ const builders = Object.entries({
     return '(' + escapeIdentifiers(columns, options) + ')values' +
     valuesBuilder(Array.isArray(first) ? first : [first], parameters, types, columns, options)
   }
-}).map(([x, fn]) => ([new RegExp('((?:^|[\\s(])' + x + '(?:$|[\\s(]))(?![\\s\\S]*\\1)', 'i'), fn]))
+}).map(([x, fn]) => {
+  const keyword = '(?:^|[\\s(])' + x + '(?:$|[\\s(])'
+  return [new RegExp(keyword + '(?![\\s\\S]*' + keyword + ')', 'i'), fn]
+})
 
 function notTagged() {
   throw Errors.generic('NOT_TAGGED_CALL', 'Query not called as a tagged template literal')
